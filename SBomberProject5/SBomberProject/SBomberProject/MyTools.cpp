@@ -14,110 +14,50 @@
 
 using namespace std;
 
-namespace MyTools {
+void ScreenSingleton::ClrScr()
+{
+    system("cls");
+}
 
-    ofstream logOut;
+void ScreenSingleton::GotoXY(double x, double y)
+{
+    const COORD cc = { short(x), short(y) };
+    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), cc);
+}
 
-    //=============================================================================================
-
-    void ClrScr()
+uint16_t ScreenSingleton::GetMaxX()
+{
+    HANDLE hWndConsole;
+    if (hWndConsole = GetStdHandle(-12))
     {
-        system("cls");
-    }
-
-    void __fastcall GotoXY(double x, double y)
-    {
-        const COORD cc = { short(x), short(y) };
-        SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), cc);
-    }
-
-    uint16_t GetMaxX()
-    {
-        HANDLE hWndConsole;
-        if (hWndConsole = GetStdHandle(-12))
+        CONSOLE_SCREEN_BUFFER_INFO consoleInfo;
+        if (GetConsoleScreenBufferInfo(hWndConsole, &consoleInfo))
         {
-            CONSOLE_SCREEN_BUFFER_INFO consoleInfo;
-            if (GetConsoleScreenBufferInfo(hWndConsole, &consoleInfo))
-            {
-                return consoleInfo.srWindow.Right;
-                int height = consoleInfo.srWindow.Bottom - consoleInfo.srWindow.Top + 1;
-            }
-        }
-
-        return 0;
-    }
-
-    uint16_t GetMaxY()
-    {
-        HANDLE hWndConsole;
-        if (hWndConsole = GetStdHandle(-12))
-        {
-            CONSOLE_SCREEN_BUFFER_INFO consoleInfo;
-            if (GetConsoleScreenBufferInfo(hWndConsole, &consoleInfo))
-            {
-                return consoleInfo.srWindow.Bottom;
-            }
-        }
-
-        return 0;
-    }
-
-    void SetColor(ConsoleColor color)
-    {
-        HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-        SetConsoleTextAttribute(hConsole, color); // color =  (WORD)((BackgroundColor << 4) | TextColor))
-    }
-
-    //=============================================================================================
-
-    void __fastcall OpenLogFile(const string& FN)
-    {
-        logOut.open(FN, ios_base::out);
-    }
-
-    void CloseLogFile()
-    {
-        if (logOut.is_open())
-        {
-            logOut.close();
+            return consoleInfo.srWindow.Right;
+            int height = consoleInfo.srWindow.Bottom - consoleInfo.srWindow.Top + 1;
         }
     }
 
-    string GetCurDateTime()
-    {
-        auto cur = std::chrono::system_clock::now();
-        time_t time = std::chrono::system_clock::to_time_t(cur);
-        char buf[64] = { 0 };
-        ctime_s(buf, 64, &time);
-        buf[strlen(buf) - 1] = '\0';
-        return string(buf);
-    }
+    return 0;
+}
 
-    void __fastcall WriteToLog(const string& str)
+uint16_t ScreenSingleton::GetMaxY()
+{
+    HANDLE hWndConsole;
+    if (hWndConsole = GetStdHandle(-12))
     {
-        if (logOut.is_open())
+        CONSOLE_SCREEN_BUFFER_INFO consoleInfo;
+        if (GetConsoleScreenBufferInfo(hWndConsole, &consoleInfo))
         {
-            logOut << GetCurDateTime() << " - " << str << endl;
+            return consoleInfo.srWindow.Bottom;
         }
     }
 
-    void __fastcall WriteToLog(const string& str, int n)
-    {
-        if (logOut.is_open())
-        {
-            logOut << GetCurDateTime() << " - " << str << n << endl;
-        }
-    }
+    return 0;
+}
 
-    void __fastcall WriteToLog(const string& str, double d)
-    {
-        if (logOut.is_open())
-        {
-            logOut << GetCurDateTime() << " - " << str << d << endl;
-        }
-    }
-
-    //=============================================================================================
-
-
-} // namespace MyTools
+void ScreenSingleton::SetColor(ConsoleColor color)
+{
+    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+    SetConsoleTextAttribute(hConsole, color); // color =  (WORD)((BackgroundColor << 4) | TextColor))
+}

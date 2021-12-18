@@ -5,7 +5,6 @@
 #include "MyTools.h"
 
 using namespace std;
-using namespace MyTools;
 
 bool House::isInside(double x1, double x2) const
 {
@@ -32,17 +31,17 @@ bool House::isInside(double x1, double x2) const
 
 void House::Draw() const
 {
-	MyTools::SetColor(CC_Yellow);
-	GotoXY(x, y - 5);
+	ScreenSingleton::getInstance().SetColor(CC_Yellow);
+	ScreenSingleton::getInstance().GotoXY(x, y - 5);
 	cout << "  ########  ";
-	GotoXY(x, y - 4);
+	ScreenSingleton::getInstance().GotoXY(x, y - 4);
 	cout << "##        ##";
-	GotoXY(x, y - 3);
+	ScreenSingleton::getInstance().GotoXY(x, y - 3);
 	cout << "############";
-	GotoXY(x, y - 2);
+	ScreenSingleton::getInstance().GotoXY(x, y - 2);
 	cout << "#          #";
-	GotoXY(x, y - 1);
+	ScreenSingleton::getInstance().GotoXY(x, y - 1);
 	cout << "#          #";
-	GotoXY(x, y);
+	ScreenSingleton::getInstance().GotoXY(x, y);
 	cout << "############";
 }
