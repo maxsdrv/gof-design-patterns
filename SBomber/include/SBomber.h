@@ -25,6 +25,8 @@ public:
     void MoveObjects();
     void CheckObjects();
 
+    void run();
+
 private:
 
     void CheckPlaneAndLevelGUI();

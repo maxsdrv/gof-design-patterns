@@ -10,18 +10,53 @@
 #include <chrono>
 #include <thread>
 
+#if defined(_WIN32) || defined(WIN32)
+
+//#include <conio.h>
+//
+#else
+
+#include <iostream>
+#include <fstream>
+#include <unistd.h>
+#include <fcntl.h>
+#include <termios.h>
+#include <sys/ioctl.h>
+
+int _kbhit() {
+    static const int STDIN = 0;
+    static bool initialized = false;
+
+    if (! initialized) {
+        // Use termios to turn off line buffering
+        termios term;
+        tcgetattr(STDIN, &term);
+        term.c_lflag &= ~ICANON;
+        tcsetattr(STDIN, TCSANOW, &term);
+        setbuf(stdin, NULL);
+        initialized = true;
+    }
+
+    int bytesWaiting;
+    ioctl(STDIN, FIONREAD, &bytesWaiting);
+    return bytesWaiting;
+}
+
+#endif
+
+
 SBomber::SBomber()
   : exitFlag(false), startTime(0), finishTime(0), deltaTime(0), passedTime(0),
     fps(0), bombsNumber(10), score(0) {
   MyTools::WriteToLog(std::string(__func__) + " was invoked");
 
-  Plane* p = new Plane;
+  auto* p = new Plane;
   p->SetDirection(1, 0.1);
   p->SetSpeed(4);
   p->SetPos(5, 10);
   vecDynamicObj.push_back(p);
 
-  LevelGUI* pGUI = new LevelGUI;
+  auto* pGUI = new LevelGUI;
   pGUI->SetParam(passedTime, fps, bombsNumber, score);
   const uint16_t maxX = ScreenSingleton::getInstance().GetMaxX();
   const uint16_t maxY = ScreenSingleton::getInstance().GetMaxY();
@@ -33,7 +68,7 @@ SBomber::SBomber()
   pGUI->SetFinishX(offset + width - 4);
   vecStaticObj.push_back(pGUI);
 
-  Ground* pGr = new Ground;
+  auto* pGr = new Ground;
   const uint16_t groundY = maxY - 5;
   pGr->SetPos(offset + 1, groundY);
   pGr->SetWidth(width - 2);
@@ -49,7 +84,7 @@ SBomber::SBomber()
   pTank->SetPos(50, groundY - 1);
   vecStaticObj.push_back(pTank);
 
-  House* pHouse = new House;
+  auto* pHouse = new House;
   pHouse->SetWidth(13);
   pHouse->SetPos(80, groundY - 1);
   vecStaticObj.push_back(pHouse);
@@ -308,4 +343,23 @@ void SBomber::DropBomb() {
     bombsNumber--;
     score -= Bomb::BombCost;
   }
+}
+
+void SBomber::run() {
+    do {
+        TimeStart();
+
+        if (_kbhit()) {
+            ProcessKBHit();
+        }
+
+        ScreenSingleton::getInstance().ClrScr();
+
+        DrawFrame();
+        MoveObjects();
+        CheckObjects();
+
+        TimeFinish();
+
+    } while (!GetExitFlag());
 }
