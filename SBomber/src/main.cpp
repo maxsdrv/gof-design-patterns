@@ -1,15 +1,17 @@
 ﻿#include "SBomber.h"
 #include "MyTools.h"
 #include "ScreenSingleton.h"
+#include "WinterPlane.h"
+#include "GetCurDateTimeSingleton.h"
 
 
 int main(void) {
-  MyTools::OpenLogFile("log.txt");
+  FileLoggerProxy::getInstance().OpenLogFile("log.txt");
 
   SBomber game;
   game.run();
 
-  MyTools::CloseLogFile();
+  FileLoggerProxy::getInstance().CloseLogFile();
 
   return 0;
 }

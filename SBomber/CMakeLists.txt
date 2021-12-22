@@ -1,12 +1,14 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.5)
 
-set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_STANDARD_REQUIRED True)
+project(SBomber VERSION 0.1 LANGUAGES CXX)
 
-project(sbomber)
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include_directories(include)
 
 file(GLOB SOURCES "src/*.cpp")
 
-add_executable(sbomber ${SOURCES})
+add_executable(SBomber ${SOURCES})

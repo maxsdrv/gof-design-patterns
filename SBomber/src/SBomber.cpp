@@ -4,7 +4,6 @@
 #include "Bomb.h"
 #include "Ground.h"
 #include "Tank.h"
-#include "House.h"
 #include "ScreenSingleton.h"
 #include "enums/CraterSize.h"
 #include <chrono>
@@ -44,50 +43,71 @@ int _kbhit() {
 
 #endif
 
+Plane *SBomber::createPlane() {
+    auto* p = new Plane;
+    p->SetDirection(1, 0.1);
+    p->SetSpeed(4);
+    p->SetPos(5, 10);
+    return p;
+}
+
+LevelGUI *
+SBomber::createUI(const uint64_t passedTime, const uint16_t fps, const uint16_t bombsNumber, const int16_t score) {
+    auto* pGUI = new LevelGUI;
+    pGUI->SetParam(passedTime, fps, bombsNumber, score);
+    const uint16_t maxX = ScreenSingleton::getInstance().GetMaxX();
+    const uint16_t maxY = ScreenSingleton::getInstance().GetMaxY();
+    const uint16_t offset = 3;
+    const uint16_t width = maxX - 7;
+    pGUI->SetPos(offset, offset);
+    pGUI->SetWidth(width);
+    pGUI->SetHeight(maxY - 4);
+    pGUI->SetFinishX(offset + width - 4);
+    return pGUI;
+}
+
+Ground *SBomber::createGround() {
+    auto* pGr = new Ground;
+    const uint16_t maxX = ScreenSingleton::getInstance().GetMaxX();
+    const uint16_t maxY = ScreenSingleton::getInstance().GetMaxY();
+    const uint16_t offset = 3;
+    const uint16_t width = maxX - 7;
+    const uint16_t groundY = maxY - 5;
+    pGr->SetPos(offset + 1, groundY);
+    pGr->SetWidth(width - 2);
+    return pGr;
+}
+
+Tank *SBomber::createTank(const double pos, const uint16_t width) {
+    const uint16_t maxY = ScreenSingleton::getInstance().GetMaxY();
+    const uint16_t groundY = maxY - 5;
+    auto* pTank = new Tank;
+    pTank->SetWidth(width);
+    pTank->SetPos(pos, groundY - 1);
+    return pTank;
+}
+
+House *SBomber::createHouse(const double pos, const uint16_t width) {
+    const uint16_t maxY = ScreenSingleton::getInstance().GetMaxY();
+    const uint16_t groundY = maxY - 5;
+    auto* pHouse = new House;
+    pHouse->SetWidth(width);
+    pHouse->SetPos(pos, groundY - 1);
+    return pHouse;
+}
 
 SBomber::SBomber()
   : exitFlag(false), startTime(0), finishTime(0), deltaTime(0), passedTime(0),
     fps(0), bombsNumber(10), score(0) {
-  MyTools::WriteToLog(std::string(__func__) + " was invoked");
+  FileLoggerProxy::getInstance().WriteToLog(std::string(__func__ )
+  + " was invoked");
 
-  auto* p = new Plane;
-  p->SetDirection(1, 0.1);
-  p->SetSpeed(4);
-  p->SetPos(5, 10);
-  vecDynamicObj.push_back(p);
-
-  auto* pGUI = new LevelGUI;
-  pGUI->SetParam(passedTime, fps, bombsNumber, score);
-  const uint16_t maxX = ScreenSingleton::getInstance().GetMaxX();
-  const uint16_t maxY = ScreenSingleton::getInstance().GetMaxY();
-  const uint16_t offset = 3;
-  const uint16_t width = maxX - 7;
-  pGUI->SetPos(offset, offset);
-  pGUI->SetWidth(width);
-  pGUI->SetHeight(maxY - 4);
-  pGUI->SetFinishX(offset + width - 4);
-  vecStaticObj.push_back(pGUI);
-
-  auto* pGr = new Ground;
-  const uint16_t groundY = maxY - 5;
-  pGr->SetPos(offset + 1, groundY);
-  pGr->SetWidth(width - 2);
-  vecStaticObj.push_back(pGr);
-
-  Tank* pTank = new Tank;
-  pTank->SetWidth(13);
-  pTank->SetPos(30, groundY - 1);
-  vecStaticObj.push_back(pTank);
-
-  pTank = new Tank;
-  pTank->SetWidth(13);
-  pTank->SetPos(50, groundY - 1);
-  vecStaticObj.push_back(pTank);
-
-  auto* pHouse = new House;
-  pHouse->SetWidth(13);
-  pHouse->SetPos(80, groundY - 1);
-  vecStaticObj.push_back(pHouse);
+  vecDynamicObj.push_back(createPlane());
+  vecStaticObj.push_back(createUI(passedTime, fps, bombsNumber, score));
+  vecStaticObj.push_back(createGround());
+  vecStaticObj.push_back(createTank(30, 13));
+  vecStaticObj.push_back(createTank(50, 13));
+  vecStaticObj.push_back(createHouse(80, 13));
 
   /*
   Bomb* pBomb = new Bomb;
@@ -114,7 +134,8 @@ SBomber::~SBomber() {
 }
 
 void SBomber::MoveObjects() {
-  MyTools::WriteToLog(std::string(__func__) + " was invoked");
+    FileLoggerProxy::getInstance().WriteToLog(std::string(__func__)
+    + " was invoked");
 
   for (size_t i = 0; i < vecDynamicObj.size(); i++) {
     if (vecDynamicObj[i] != nullptr) {
@@ -124,8 +145,8 @@ void SBomber::MoveObjects() {
 };
 
 void SBomber::CheckObjects() {
-  MyTools::WriteToLog(std::string(__func__) + " was invoked");
-
+    FileLoggerProxy::getInstance().WriteToLog(std::string(__func__)
+                                              + " was invoked");
   CheckPlaneAndLevelGUI();
   CheckBombsAndGround();
 };
@@ -143,23 +164,23 @@ void SBomber::CheckBombsAndGround() {
   for (size_t i = 0; i < vecBombs.size(); i++) {
     if (vecBombs[i]->GetY() >= y) {
       pGround->AddCrater(vecBombs[i]->GetX());
-      CheckDestoyableObjects(vecBombs[i]);
+        CheckDestroyableObjects(vecBombs[i]);
       DeleteDynamicObj(vecBombs[i]);
     }
   }
 }
 
-void SBomber::CheckDestoyableObjects(Bomb* pBomb) {
-  std::vector<DestroyableGroundObject*> vecDestoyableObjects =
-      FindDestoyableGroundObjects();
+void SBomber::CheckDestroyableObjects(Bomb* pBomb) {
+  std::vector<DestroyableGroundObject*> vecDestroyableObjects =
+          FindDestroyableGroundObjects();
   const double size = pBomb->GetWidth();
   const double size_2 = size / 2;
-  for (size_t i = 0; i < vecDestoyableObjects.size(); i++) {
+  for (size_t i = 0; i < vecDestroyableObjects.size(); i++) {
     const double x1 = pBomb->GetX() - size_2;
     const double x2 = x1 + size;
-    if (vecDestoyableObjects[i]->isInside(x1, x2)) {
-      score += vecDestoyableObjects[i]->GetScore();
-      DeleteStaticObj(vecDestoyableObjects[i]);
+    if (vecDestroyableObjects[i]->isInside(x1, x2)) {
+      score += vecDestroyableObjects[i]->GetScore();
+      DeleteStaticObj(vecDestroyableObjects[i]);
     }
   }
 }
@@ -184,7 +205,7 @@ void SBomber::DeleteStaticObj(GameObject* pObj) {
   }
 }
 
-std::vector<DestroyableGroundObject*> SBomber::FindDestoyableGroundObjects() const {
+std::vector<DestroyableGroundObject*> SBomber::FindDestroyableGroundObjects() const {
   std::vector<DestroyableGroundObject*> vec;
   Tank* pTank;
   House* pHouse;
@@ -260,8 +281,8 @@ void SBomber::ProcessKBHit() {
     c = getchar();
   }
 
-  MyTools::WriteToLog(std::string(__func__) + " was invoked. key = ", c);
-
+    FileLoggerProxy::getInstance().WriteToLog(std::string(__func__)
+                                              + " was invoked. key = ", c);
   switch (c) {
 
     case 27: // esc
@@ -290,8 +311,8 @@ void SBomber::ProcessKBHit() {
 }
 
 void SBomber::DrawFrame() {
-  MyTools::WriteToLog(std::string(__func__) + " was invoked");
-
+    FileLoggerProxy::getInstance().WriteToLog(std::string(__func__)
+                                              + " was invoked");
   for (size_t i = 0; i < vecDynamicObj.size(); i++) {
     if (vecDynamicObj[i] != nullptr) {
       vecDynamicObj[i]->Draw();
@@ -311,7 +332,8 @@ void SBomber::DrawFrame() {
 }
 
 void SBomber::TimeStart() {
-  MyTools::WriteToLog(std::string(__func__) + " was invoked");
+    FileLoggerProxy::getInstance().WriteToLog(std::string(__func__)
+                                              + " was invoked");
   startTime = std::chrono::duration_cast<std::chrono::milliseconds>(
       std::chrono::high_resolution_clock::now().time_since_epoch()).count();
 }
@@ -322,13 +344,14 @@ void SBomber::TimeFinish() {
   deltaTime = uint16_t(finishTime - startTime);
   passedTime += deltaTime;
 
-  MyTools::WriteToLog(std::string(__func__) + " deltaTime = ", (int)deltaTime);
+    FileLoggerProxy::getInstance().WriteToLog(std::string(__func__)
+                                              + " deltaTime = ", (int)deltaTime);
 }
 
 void SBomber::DropBomb() {
   if (bombsNumber > 0) {
-    MyTools::WriteToLog(std::string(__func__) + " was invoked");
-
+      FileLoggerProxy::getInstance().WriteToLog(std::string(__func__)
+                                                + " was invoked");
     Plane* pPlane = FindPlane();
     double x = pPlane->GetX() + 4;
     double y = pPlane->GetY() + 2;
@@ -348,6 +371,7 @@ void SBomber::DropBomb() {
 void SBomber::run() {
     do {
         TimeStart();
+        GetCurDateTimeSingleton::getInstance().Start();
 
         if (_kbhit()) {
             ProcessKBHit();
@@ -361,5 +385,14 @@ void SBomber::run() {
 
         TimeFinish();
 
+        GetCurDateTimeSingleton::getInstance().SaveTime();
+
     } while (!GetExitFlag());
+
+    std::cout << "  Result of logging \t";
+    std::cout << GetCurDateTimeSingleton::getInstance().Calculating();
+    std::cout << "\n";
+
 }
+
+
