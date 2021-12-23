@@ -1,6 +1,3 @@
-//Test
-
-
 #include "MyTools.h"
 #include "SBomber.h"
 #include "Bomb.h"
