@@ -1,0 +1,10 @@
+#ifndef SBOMBER_BOMBITERATOR_H
+#define SBOMBER_BOMBITERATOR_H
+
+
+class BombIterator {
+
+};
+
+
+#endif //SBOMBER_BOMBITERATOR_H

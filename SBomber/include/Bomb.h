@@ -10,6 +10,7 @@ public:
 
 	void Draw() const override;
 
+    ~Bomb() override;
 private:
 
 };

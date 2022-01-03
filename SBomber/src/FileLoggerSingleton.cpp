@@ -18,7 +18,7 @@ void FileLoggerSingleton::WriteToLog(const std::string& str)
 {
     if (logOut.is_open()) {
         logOut << GetCurDateTimeSingleton::getInstance().GetCurDateTime() <<
-               " - " << str << " Singletone" << std::endl;
+               " - " << str << " Singleton" << std::endl;
     }
 }
 
@@ -26,7 +26,7 @@ void FileLoggerSingleton::WriteToLog(const std::string& str, int n)
 {
     if (logOut.is_open()) {
         logOut << GetCurDateTimeSingleton::getInstance().GetCurDateTime() <<
-               " - " << str << n << " Singletone" << std::endl;
+               " - " << str << n << " Singleton" << std::endl;
     }
 }
 
@@ -34,6 +34,6 @@ void FileLoggerSingleton::WriteToLog(const std::string& str, double d)
 {
     if (logOut.is_open()) {
         logOut << GetCurDateTimeSingleton::getInstance().GetCurDateTime() <<
-               " - " << str << d << " Singletone" << std::endl;
+               " - " << str << d << " Singleton" << std::endl;
     }
 }

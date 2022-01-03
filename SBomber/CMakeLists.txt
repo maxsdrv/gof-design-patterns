@@ -7,8 +7,24 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+set(SOURCE)
+set(HEADER)
+
+list(APPEND HEADER
+        include/BombDecorator.h
+        include/BombIterator.h)
+
+list(APPEND SOURCE
+        src/BombDecorator.cpp
+        src/BombIterator.cpp)
+
+
 include_directories(include)
 
 file(GLOB SOURCES "src/*.cpp")
 
-add_executable(SBomber ${SOURCES})
+set(all_code_files
+        ${HEADER}
+        ${SOURCE})
+
+add_executable(${PROJECT_NAME} ${all_code_files} ${SOURCES})

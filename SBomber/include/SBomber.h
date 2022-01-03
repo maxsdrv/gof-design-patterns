@@ -1,6 +1,8 @@
 #pragma once
 
 #include <vector>
+#include <chrono>
+#include <memory>
 
 #include "LevelGUI.h"
 #include "Plane.h"
@@ -9,6 +11,12 @@
 #include "Tank.h"
 #include "House.h"
 #include "FileLoggerProxy.h"
+#include "ScreenSingleton.h"
+#include "enums/CraterSize.h"
+
+class Command;
+class IContext;
+class Context;
 
 class SBomber
 {
@@ -39,14 +47,15 @@ public:
     static Tank* createTank(const double pos, const uint16_t width);
     static House* createHouse(const double pos, const uint16_t width);
 
+    static void CommandExecute(Command* command);
+
 private:
 
     void CheckPlaneAndLevelGUI();
     void CheckBombsAndGround();
     void  CheckDestroyableObjects(Bomb* pBomb);
 
-    void  DeleteDynamicObj(DynamicObject * pBomb);
-    void  DeleteStaticObj(GameObject* pObj);
+    void updateFromCommand(Context* context);
 
     Ground * FindGround() const;
     Plane * FindPlane() const;
@@ -54,7 +63,6 @@ private:
     std::vector<DestroyableGroundObject*> FindDestroyableGroundObjects() const;
     std::vector<Bomb*> FindAllBombs() const;
 
-    void DropBomb();
 
     std::vector<DynamicObject*> vecDynamicObj;
     std::vector<GameObject*> vecStaticObj;
