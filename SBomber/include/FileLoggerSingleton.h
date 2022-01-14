@@ -5,6 +5,7 @@
 #include <fstream>
 
 #include "GetCurDateTimeSingleton.h"
+#include "Bomb.h"
 
 class FileLoggerSingleton {
 public:

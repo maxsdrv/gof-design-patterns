@@ -12,16 +12,28 @@ set(HEADER)
 
 list(APPEND HEADER
         include/BombDecorator.h
-        include/BombIterator.h)
+        include/BombIterator.h
+        include/IIterator.h
+        include/EvenBombIterator.h
+        include/OddBombIterator.h
+        include/AdapterTank.h
+        include/HouseBuilder.h
+        include/HouseBuilderA.h)
+
 
 list(APPEND SOURCE
         src/BombDecorator.cpp
-        src/BombIterator.cpp)
+        src/BombIterator.cpp
+        src/EvenBombIterator.cpp
+        src/OddBombIterator.cpp
+        src/AdapterTank.cpp
+        src/HouseBuilder.cpp
+        src/HouseBuilderA.cpp)
 
-
-include_directories(include)
 
 file(GLOB SOURCES "src/*.cpp")
+
+include_directories(include)
 
 set(all_code_files
         ${HEADER}

@@ -5,8 +5,8 @@ IContext::IContext() : mPlane(nullptr),
                         mSpeed(0),
                         mWidthCrater(0),
                         mScore(0) {
-TestFileLogger::getInstance().WriteToLog(std::string(
-        __func__) + " IContext() was invoked");
+/*TestFileLogger::getInstance().WriteToLog(std::string(
+        __func__) + " IContext() was invoked");*/
 }
 
 IContext::~IContext() {
@@ -14,8 +14,8 @@ IContext::~IContext() {
 }
 
 Context::~Context() {
-    TestFileLogger::getInstance().WriteToLog(std::string(__func__) +
-                                  "Destructor was invoked");
+    /*TestFileLogger::getInstance().WriteToLog(std::string(__func__) +
+                                  "Destructor was invoked");*/
 }
 
 void Context::setParam(const Plane *plane, std::vector<DynamicObject *> &vecDynamicObject, const uint16_t &bomber,
@@ -27,41 +27,41 @@ void Context::setParam(const Plane *plane, std::vector<DynamicObject *> &vecDyna
     mSpeed = speed;
     mWidthCrater = widthCrater;
     mScore = score;
-    TestFileLogger::getInstance().WriteToLog(std::string(
-            __func__) + " Context::setParam() was invoked");
+    /*TestFileLogger::getInstance().WriteToLog(std::string(
+            __func__) + " Context::setParam() was invoked");*/
 }
 
 void CommandDropBomb::setParam(IContext *context) {
     this->mContext = context;
-    TestFileLogger::getInstance().WriteToLog(std::string(
-            __func__) + " CommandDropBomb::setParam() was invoked");
+    /*TestFileLogger::getInstance().WriteToLog(std::string(
+            __func__) + " CommandDropBomb::setParam() was invoked");*/
 }
 
 void CommandDropBomb::execute() {
     if (mContext->mBombCount > 0) {
         FileLoggerProxy::getInstance().WriteToLog(std::string(__func__)
                                                   + " was invoked");
-        TestFileLogger::getInstance().WriteToLog(std::string(
-                __func__) + " CommandDropBomb::execute() was invoked");
+        /*TestFileLogger::getInstance().WriteToLog(std::string(
+                __func__) + " CommandDropBomb::execute() was invoked");*/
         double x = mContext->mPlane->GetX() + 4;
         double y = mContext->mPlane->GetY() + 2;
-        TestFileLogger::getInstance().WriteToLog(std::string(
+        /*TestFileLogger::getInstance().WriteToLog(std::string(
                 __func__) +
                                                  " Score = " + std::to_string(mContext->mScore) +
-                                                 " Bombs number = " + std::to_string(mContext->mBombCount));
+                                                 " Bombs number = " + std::to_string(mContext->mBombCount));*/
 
         auto* pBomb = new Bomb;
         pBomb->SetDirection(0.3, 1);
         pBomb->SetSpeed(mContext->mSpeed);
         pBomb->SetPos(x, y); pBomb->SetWidth(mContext->mWidthCrater);
-        auto decorator = new BombDecorator(pBomb);
+//        auto decorator = new BombDecorator(pBomb);
 
-        mContext->mVecDynamicObject.push_back(decorator);
+        mContext->mVecDynamicObject.push_back(pBomb);
         mContext->mBombCount--;
         mContext->mScore -= Bomb::BombCost;
-        TestFileLogger::getInstance().WriteToLog(std::string(__func__)
+        /*TestFileLogger::getInstance().WriteToLog(std::string(__func__)
                                                  + " Score = " + std::to_string(mContext->mScore) +
-                                                 " Bombs number = " + std::to_string(mContext->mBombCount));
+                                                 " Bombs number = " + std::to_string(mContext->mBombCount));*/
     }
 }
 
@@ -81,11 +81,6 @@ void DeleteStaticObj::execute() {
         }
     }
 }
-
-const std::vector<GameObject *> &DeleteStaticObj::getStaticVectorObject() const {
-    return mStaticVector;
-}
-
 
 DeleteDynamicObj::DeleteDynamicObj() : mDynamicObj(nullptr) {}
 
@@ -108,7 +103,9 @@ const std::vector<DynamicObject *> &DeleteDynamicObj::getDynamicVectorObject() c
     return mDynamicVector;
 }
 
-
+const std::vector<GameObject *> &DeleteStaticObj::getStaticVectorObject() const {
+    return mStaticVector;
+}
 
 
 

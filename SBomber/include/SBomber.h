@@ -22,7 +22,7 @@ class SBomber
 {
 public:
 
-    SBomber();
+    explicit SBomber();
     ~SBomber();
     
     inline bool GetExitFlag() const { return exitFlag; }
@@ -48,7 +48,6 @@ public:
     static House* createHouse(const double pos, const uint16_t width);
 
     static void CommandExecute(Command* command);
-
 private:
 
     void CheckPlaneAndLevelGUI();
@@ -68,6 +67,7 @@ private:
     std::vector<GameObject*> vecStaticObj;
     
     bool exitFlag;
+    bool oddIteration; // for Pattern Iterator, switching between Odd or Even Iteration
 
     uint64_t startTime, finishTime, passedTime;
     uint16_t bombsNumber, deltaTime, fps;

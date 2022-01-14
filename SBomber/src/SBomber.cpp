@@ -1,5 +1,9 @@
 #include "SBomber.h"
 #include "Command.h"
+#include "BombIterator.h"
+#include "EvenBombIterator.h"
+#include "OddBombIterator.h"
+#include "AdapterTank.h"
 
 
 #if defined(_WIN32) || defined(WIN32)
@@ -14,6 +18,7 @@
 #include <fcntl.h>
 #include <termios.h>
 #include <sys/ioctl.h>
+
 
 int _kbhit() {
     static const int STDIN = 0;
@@ -74,6 +79,7 @@ Ground *SBomber::createGround() {
 Tank *SBomber::createTank(const double pos, const uint16_t width) {
     const uint16_t maxY = ScreenSingleton::getInstance().GetMaxY();
     const uint16_t groundY = maxY - 5;
+
     auto* pTank = new Tank;
     pTank->SetWidth(width);
     pTank->SetPos(pos, groundY - 1);
@@ -153,20 +159,24 @@ void SBomber::CheckPlaneAndLevelGUI() {
 }
 
 void SBomber::CheckBombsAndGround() {
-  std::vector<Bomb*> vecBombs = FindAllBombs();
-  Ground* pGround = FindGround();
-  const double y = pGround->GetY();
-  for (size_t i = 0; i < vecBombs.size(); i++) {
-    if (vecBombs[i]->GetY() >= y) {
-      pGround->AddCrater(vecBombs[i]->GetX());
-        CheckDestroyableObjects(vecBombs[i]);
-        auto command = std::make_unique<DeleteDynamicObj>();
-        //Using Command pattern
-        command->setParam(vecBombs[i], vecDynamicObj);
-        CommandExecute(command.get());
-        vecDynamicObj = command->getDynamicVectorObject();
+    Ground *pGround = FindGround();
+    const double y = pGround->GetY();
+  //Using Iterator pattern
+    std::vector<Bomb*> vecBombs = FindAllBombs();
+    auto *pItr = new BombIterator(vecBombs);
+
+    for (pItr->begin(); !pItr->isDone(); pItr->Next()) {
+        if (pItr->CurrentObj()->GetY() >= y) {
+            pGround->AddCrater(pItr->CurrentObj()->GetX());
+            CheckDestroyableObjects(pItr->CurrentObj());
+            auto command = std::make_unique<DeleteDynamicObj>();
+            //Using Command pattern
+            command->setParam(pItr->CurrentObj(), vecDynamicObj);
+            CommandExecute(command.get());
+            vecDynamicObj = command->getDynamicVectorObject();
+        }
     }
-  }
+    delete pItr;
 }
 
 void SBomber::CheckDestroyableObjects(Bomb* pBomb) {
@@ -223,16 +233,24 @@ Ground* SBomber::FindGround() const {
 }
 
 std::vector<Bomb*> SBomber::FindAllBombs() const {
-  std::vector<Bomb*> vecBombs;
-
-  for (size_t i = 0; i < vecDynamicObj.size(); i++) {
-    Bomb* pBomb = dynamic_cast<Bomb*>(vecDynamicObj[i]);
-    if (pBomb != nullptr) {
-      vecBombs.push_back(pBomb);
+    std::vector<Bomb *> vecBombs;
+    //Strategy Pattern
+    std::unique_ptr<IIterator> pItr;
+    if (!oddIteration) {
+        pItr = std::make_unique<OddBombIterator>(vecDynamicObj);
     }
-  }
+    else {
+        pItr = std::make_unique<EvenBombIterator>(vecDynamicObj);
+    }
 
-  return vecBombs;
+    for (pItr->First(); !pItr->isDone(); pItr->Next()) {
+        Bomb *pBomb = pItr->CurrentObj();
+        if (pBomb != nullptr) {
+            vecBombs.push_back(pBomb);
+        }
+    }
+
+    return vecBombs;
 }
 
 Plane* SBomber::FindPlane() const {

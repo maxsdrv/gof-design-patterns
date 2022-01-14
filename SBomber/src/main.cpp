@@ -1,6 +1,7 @@
 ﻿#include "SBomber.h"
 #include "TestFileLogger.h"
 
+#include <iterator>
 
 int main(int argc, char** argv) {
   FileLoggerProxy::getInstance().OpenLogFile("log.txt");
@@ -11,6 +12,7 @@ int main(int argc, char** argv) {
 
   FileLoggerProxy::getInstance().CloseLogFile();
   TestFileLogger::getInstance().CloseLogFile();
+
 
   return 0;
 }

@@ -31,3 +31,4 @@ void TestFileLogger::WriteToLog(const std::string &str, double d) {
                " - " << str << d << " TestFileLoggerSingleton" << std::endl;
     }
 }
+
