@@ -8,7 +8,7 @@
 CollisionDetector::CollisionDetector(const std::vector<GameObject*>& vecStaticObj,
                                      const std::vector<DynamicObject*>& vecDynamicObj, int16_t score,
                                      bool exitFlag) :
-m_vecStaticObj(vecStaticObj), m_vecDynamicObj(vecDynamicObj), m_score(score), m_exitFlag(exitFlag) {}
+        m_vecStaticObj(vecStaticObj), m_vecDynamicObj(vecDynamicObj), m_score(score), m_exitFlag(exitFlag) {}
 
 
 

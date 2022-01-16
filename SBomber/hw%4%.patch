@@ -1,0 +1,239 @@
+diff --git a/SBomber/include/CollisionDetector.h b/SBomber/include/CollisionDetector.h
+index af0fa5f..690401d 100644
+--- a/SBomber/include/CollisionDetector.h
++++ b/SBomber/include/CollisionDetector.h
+@@ -6,7 +6,7 @@ class Command;
+ 
+ class CollisionDetector {
+ public:
+-  CollisionDetector(const std::vector<GameObject*>& vecStaticObj,
++    CollisionDetector(const std::vector<GameObject*>& vecStaticObj,
+                       const std::vector<DynamicObject*>& vecDynamicObj,
+                       int16_t score, bool exitFlag);
+ 
+@@ -25,5 +25,4 @@ private:
+     bool m_exitFlag;
+     std::vector<GameObject*> m_vecStaticObj;
+     std::vector<DynamicObject*> m_vecDynamicObj;
+-};
+-
++};
+\ No newline at end of file
+diff --git a/SBomber/include/Director.h b/SBomber/include/Director.h
+index 747778c..e1298c6 100644
+--- a/SBomber/include/Director.h
++++ b/SBomber/include/Director.h
+@@ -15,15 +15,15 @@ public:
+         pBuilder->createWindow();
+         return (pBuilder->getHouse());
+     }
+-	House* createMinimalHouse(HouseBuilder* pBuilder) {
+-		pBuilder->createHouse();
++    House* createMinimalHouse(HouseBuilder* pBuilder) {
++        pBuilder->createHouse();
+         pBuilder->createRoof();
+         pBuilder->createWall();
+         return (pBuilder->getHouse());
+ 
+-	}
++    }
+ private:
+ };
+ 
+ 
+-#endif //SBOMBER_DIRECTOR_H
++#endif //SBOMBER_DIRECTOR_H
+\ No newline at end of file
+diff --git a/SBomber/include/HouseBuilder.h b/SBomber/include/HouseBuilder.h
+index 8916e01..5eb03c7 100644
+--- a/SBomber/include/HouseBuilder.h
++++ b/SBomber/include/HouseBuilder.h
+@@ -4,7 +4,7 @@
+ 
+ class HouseBuilder {
+ public:
+-	virtual ~HouseBuilder();
++    virtual ~HouseBuilder();
+     HouseBuilder();
+     virtual void createHouse() {};
+     virtual void createWall() {};
+@@ -15,4 +15,4 @@ public:
+     virtual void printHouse() {};
+ protected:
+     House* pHouse;
+-};
++};
+\ No newline at end of file
+diff --git a/SBomber/include/HouseBuilderA.h b/SBomber/include/HouseBuilderA.h
+index 99601d7..5df1408 100644
+--- a/SBomber/include/HouseBuilderA.h
++++ b/SBomber/include/HouseBuilderA.h
+@@ -11,4 +11,4 @@ public:
+     void createRoof() override;
+     void printHouse() override;
+ private:
+-};
++};
+\ No newline at end of file
+diff --git a/SBomber/include/SBomber.h b/SBomber/include/SBomber.h
+index 1834d42..6173437 100644
+--- a/SBomber/include/SBomber.h
++++ b/SBomber/include/SBomber.h
+@@ -26,7 +26,7 @@ public:
+ 
+     explicit SBomber(int type_house);
+     ~SBomber();
+-    
++
+     inline bool GetExitFlag() const { return exitFlag; }
+ 
+     void ProcessKBHit();
+@@ -55,7 +55,7 @@ private:
+ 
+     std::vector<DynamicObject*> vecDynamicObj;
+     std::vector<GameObject*> vecStaticObj;
+-    
++
+     bool exitFlag;
+     bool oddIteration; // for Pattern Iterator, switching between Odd or Even Iteration
+ 
+@@ -63,10 +63,9 @@ private:
+     uint16_t bombsNumber, deltaTime, fps;
+     int16_t score;
+ 
+-	int m_type_house; // for Pattern Builder.
++    int m_type_house; // for Pattern Builder.
+     std::unique_ptr<CollisionDetector> m_CollisionD;
+ };
+ 
+ 
+ 
+-
+diff --git a/SBomber/src/CollisionDetector.cpp b/SBomber/src/CollisionDetector.cpp
+index 0714261..254f23a 100644
+--- a/SBomber/src/CollisionDetector.cpp
++++ b/SBomber/src/CollisionDetector.cpp
+@@ -8,7 +8,7 @@
+ CollisionDetector::CollisionDetector(const std::vector<GameObject*>& vecStaticObj,
+                                      const std::vector<DynamicObject*>& vecDynamicObj, int16_t score,
+                                      bool exitFlag) :
+-m_vecStaticObj(vecStaticObj), m_vecDynamicObj(vecDynamicObj), m_score(score), m_exitFlag(exitFlag) {}
++        m_vecStaticObj(vecStaticObj), m_vecDynamicObj(vecDynamicObj), m_score(score), m_exitFlag(exitFlag) {}
+ 
+ 
+ 
+diff --git a/SBomber/src/HouseBuilder.cpp b/SBomber/src/HouseBuilder.cpp
+index 08c3e34..336ff95 100644
+--- a/SBomber/src/HouseBuilder.cpp
++++ b/SBomber/src/HouseBuilder.cpp
+@@ -6,4 +6,4 @@ HouseBuilder::~HouseBuilder() {
+ 
+ 
+ HouseBuilder::HouseBuilder() : pHouse(nullptr) {
+-}
++}
+\ No newline at end of file
+diff --git a/SBomber/src/HouseBuilderA.cpp b/SBomber/src/HouseBuilderA.cpp
+index 6ca8396..69acb64 100644
+--- a/SBomber/src/HouseBuilderA.cpp
++++ b/SBomber/src/HouseBuilderA.cpp
+@@ -94,16 +94,3 @@ void HouseBuilderA::createHouse() {
+ }
+ 
+ 
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+diff --git a/SBomber/src/SBomber.cpp b/SBomber/src/SBomber.cpp
+index f63529c..c0a1869 100644
+--- a/SBomber/src/SBomber.cpp
++++ b/SBomber/src/SBomber.cpp
+@@ -91,24 +91,24 @@ House *SBomber::createHouse(const double pos, const uint16_t width) const {
+     const uint16_t groundY = maxY - 5;
+ 
+     //Builder Pattern
+-	House* pHouse = nullptr;
+-	if (m_type_house == 1) {
+-		Director dir{};
+-		HouseBuilder* standardHouse = new HouseBuilderA;
+-		pHouse = dir.createStandardHouse(standardHouse);
+-		pHouse->SetWidth(width);
+-		pHouse->SetPos(pos, groundY - 1);
+-	}
+-	else if (m_type_house == 2) {
+-		Director dir{};
+-		HouseBuilder* minimalHouse = new HouseBuilderA;
+-		pHouse = dir.createMinimalHouse(minimalHouse);
+-		pHouse->SetWidth(width);
+-		pHouse->SetPos(pos, groundY - 1);
+-	}
+-
+-
+-	return pHouse;
++    House* pHouse = nullptr;
++    if (m_type_house == 1) {
++        Director dir{};
++        HouseBuilder* standardHouse = new HouseBuilderA;
++        pHouse = dir.createStandardHouse(standardHouse);
++        pHouse->SetWidth(width);
++        pHouse->SetPos(pos, groundY - 1);
++    }
++    else if (m_type_house == 2) {
++        Director dir{};
++        HouseBuilder* minimalHouse = new HouseBuilderA;
++        pHouse = dir.createMinimalHouse(minimalHouse);
++        pHouse->SetWidth(width);
++        pHouse->SetPos(pos, groundY - 1);
++    }
++
++
++    return pHouse;
+ }
+ 
+ SBomber::SBomber(int type_house)
+@@ -286,10 +286,3 @@ void SBomber::updateFromCommand(Context *context) {
+ }
+ 
+ 
+-
+-
+-
+-
+-
+-
+-
+diff --git a/SBomber/src/main.cpp b/SBomber/src/main.cpp
+index 2b1b521..0f34be8 100644
+--- a/SBomber/src/main.cpp
++++ b/SBomber/src/main.cpp
+@@ -6,10 +6,10 @@
+ int main(int argc, char** argv) {
+   FileLoggerProxy::getInstance().OpenLogFile("log.txt");
+   TestFileLogger::getInstance().OpenLogFile("test_log.txt");
+-			
++
+ 	std::cout << "Choose house type: \n" << "1: Standard house.\n" << "2: Minimal house.\n";
+ 	int c;
+-	std::cin >> c;	
++	std::cin >> c;
+ 
+   SBomber game(c);
+   game.run();
+@@ -17,6 +17,6 @@ int main(int argc, char** argv) {
+   FileLoggerProxy::getInstance().CloseLogFile();
+   TestFileLogger::getInstance().CloseLogFile();
+ 
+-    
++
+   return 0;
+ }

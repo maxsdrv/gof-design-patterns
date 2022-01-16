@@ -6,7 +6,7 @@ class Command;
 
 class CollisionDetector {
 public:
-  CollisionDetector(const std::vector<GameObject*>& vecStaticObj,
+    CollisionDetector(const std::vector<GameObject*>& vecStaticObj,
                       const std::vector<DynamicObject*>& vecDynamicObj,
                       int16_t score, bool exitFlag);
 
@@ -26,4 +26,3 @@ private:
     std::vector<GameObject*> m_vecStaticObj;
     std::vector<DynamicObject*> m_vecDynamicObj;
 };
-

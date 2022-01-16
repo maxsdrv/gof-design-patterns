@@ -26,7 +26,7 @@ public:
 
     explicit SBomber(int type_house);
     ~SBomber();
-    
+
     inline bool GetExitFlag() const { return exitFlag; }
 
     void ProcessKBHit();
@@ -55,7 +55,7 @@ private:
 
     std::vector<DynamicObject*> vecDynamicObj;
     std::vector<GameObject*> vecStaticObj;
-    
+
     bool exitFlag;
     bool oddIteration; // for Pattern Iterator, switching between Odd or Even Iteration
 
@@ -63,10 +63,9 @@ private:
     uint16_t bombsNumber, deltaTime, fps;
     int16_t score;
 
-	int m_type_house; // for Pattern Builder.
+    int m_type_house; // for Pattern Builder.
     std::unique_ptr<CollisionDetector> m_CollisionD;
 };
-
 
 
 

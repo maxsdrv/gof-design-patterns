@@ -4,7 +4,7 @@
 
 class HouseBuilder {
 public:
-	virtual ~HouseBuilder();
+    virtual ~HouseBuilder();
     HouseBuilder();
     virtual void createHouse() {};
     virtual void createWall() {};

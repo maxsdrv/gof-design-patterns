@@ -15,13 +15,13 @@ public:
         pBuilder->createWindow();
         return (pBuilder->getHouse());
     }
-	House* createMinimalHouse(HouseBuilder* pBuilder) {
-		pBuilder->createHouse();
+    House* createMinimalHouse(HouseBuilder* pBuilder) {
+        pBuilder->createHouse();
         pBuilder->createRoof();
         pBuilder->createWall();
         return (pBuilder->getHouse());
 
-	}
+    }
 private:
 };
 

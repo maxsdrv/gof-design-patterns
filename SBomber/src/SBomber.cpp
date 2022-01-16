@@ -91,24 +91,24 @@ House *SBomber::createHouse(const double pos, const uint16_t width) const {
     const uint16_t groundY = maxY - 5;
 
     //Builder Pattern
-	House* pHouse = nullptr;
-	if (m_type_house == 1) {
-		Director dir{};
-		HouseBuilder* standardHouse = new HouseBuilderA;
-		pHouse = dir.createStandardHouse(standardHouse);
-		pHouse->SetWidth(width);
-		pHouse->SetPos(pos, groundY - 1);
-	}
-	else if (m_type_house == 2) {
-		Director dir{};
-		HouseBuilder* minimalHouse = new HouseBuilderA;
-		pHouse = dir.createMinimalHouse(minimalHouse);
-		pHouse->SetWidth(width);
-		pHouse->SetPos(pos, groundY - 1);
-	}
+    House* pHouse = nullptr;
+    if (m_type_house == 1) {
+        Director dir{};
+        HouseBuilder* standardHouse = new HouseBuilderA;
+        pHouse = dir.createStandardHouse(standardHouse);
+        pHouse->SetWidth(width);
+        pHouse->SetPos(pos, groundY - 1);
+    }
+    else if (m_type_house == 2) {
+        Director dir{};
+        HouseBuilder* minimalHouse = new HouseBuilderA;
+        pHouse = dir.createMinimalHouse(minimalHouse);
+        pHouse->SetWidth(width);
+        pHouse->SetPos(pos, groundY - 1);
+    }
 
 
-	return pHouse;
+    return pHouse;
 }
 
 SBomber::SBomber(int type_house)
@@ -284,12 +284,5 @@ void SBomber::updateFromCommand(Context *context) {
     vecDynamicObj = context->mVecDynamicObject;
     score = context->mScore;
 }
-
-
-
-
-
-
-
 
 
