@@ -85,7 +85,7 @@ void HouseBuilderA::printHouse() {
 }
 
 void HouseBuilderA::createHouse() {
-    pHouse = new House;
+    pHouse = std::make_unique<House>();
     for (size_t i = 0; i < House::rows; ++i) {
         for (size_t j = 0; j < House::columns; ++j) {
             pHouse->look[i][j] = ' ';

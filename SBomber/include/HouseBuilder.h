@@ -1,18 +1,21 @@
 #pragma once
 
+#include <memory>
+
 #include "House.h"
 
 class HouseBuilder {
 public:
-    virtual ~HouseBuilder();
-    HouseBuilder();
+    virtual ~HouseBuilder() = default;
+    HouseBuilder() = default;
     virtual void createHouse() {};
     virtual void createWall() {};
     virtual void createWindow() {};
     virtual void createPipe() {};
     virtual void createRoof() {};
-    virtual House* getHouse() {return pHouse;}
+    virtual House* getHouse() {return pHouse.get();}
     virtual void printHouse() {};
 protected:
-    House* pHouse;
+//    House* pHouse;
+    std::unique_ptr<House> pHouse;
 };
