@@ -18,7 +18,12 @@ list(APPEND HEADER
         include/OddBombIterator.h
         include/AdapterTank.h
         include/HouseBuilder.h
-        include/HouseBuilderA.h)
+        include/HouseBuilderA.h
+        include/HouseModels.h
+        include/Director.h
+        include/CollisionDetector.h
+        )
+
 
 
 list(APPEND SOURCE
@@ -28,7 +33,10 @@ list(APPEND SOURCE
         src/OddBombIterator.cpp
         src/AdapterTank.cpp
         src/HouseBuilder.cpp
-        src/HouseBuilderA.cpp)
+        src/HouseBuilderA.cpp
+        src/CollisionDetector.cpp
+        )
+
 
 
 file(GLOB SOURCES "src/*.cpp")
