@@ -1,0 +1,288 @@
+diff --git a/SBomber/CMakeLists.txt b/SBomber/CMakeLists.txt
+index 20f1ead..d13862a 100644
+--- a/SBomber/CMakeLists.txt
++++ b/SBomber/CMakeLists.txt
+@@ -19,10 +19,9 @@ list(APPEND HEADER
+         include/AdapterTank.h
+         include/HouseBuilder.h
+         include/HouseBuilderA.h
+-        include/HouseModels.h
+         include/Director.h
+         include/CollisionDetector.h
+-        )
++        include/IVisitor.h)
+ 
+ 
+ 
+@@ -35,7 +34,7 @@ list(APPEND SOURCE
+         src/HouseBuilder.cpp
+         src/HouseBuilderA.cpp
+         src/CollisionDetector.cpp
+-        )
++        src/IVisitor.cpp)
+ 
+ 
+ 
+diff --git a/SBomber/include/Bomb.h b/SBomber/include/Bomb.h
+index f773d5c..cc94136 100644
+--- a/SBomber/include/Bomb.h
++++ b/SBomber/include/Bomb.h
+@@ -1,6 +1,7 @@
+ #pragma once
+ 
+ #include "DynamicObject.h"
++#include "IVisitor.h"
+ 
+ class Bomb : public DynamicObject
+ {
+@@ -10,6 +11,8 @@ public:
+ 
+ 	void Draw() const override;
+ 
++    void Accept(IVisitor* pVisitor) override;
++
+     ~Bomb() override;
+ private:
+ 
+diff --git a/SBomber/include/DynamicObject.h b/SBomber/include/DynamicObject.h
+index b38e36d..b64ac17 100644
+--- a/SBomber/include/DynamicObject.h
++++ b/SBomber/include/DynamicObject.h
+@@ -1,8 +1,10 @@
+ #pragma once
+ 
+-#include <stdint.h>
++#include <cstdint>
++#include <tuple>
+ 
+ #include "GameObject.h"
++#include "IVisitor.h"
+ 
+ class DynamicObject : public GameObject 
+ {
+@@ -10,11 +12,15 @@ public:
+ 
+     DynamicObject() : speed(0.0), xDirction(0.0), yDirection(0) { }
+ 
++    virtual void Move(uint16_t time) { x += xDirction * speed * time * 0.001; y += yDirection * speed * time * 0.001; };
++    virtual void Accept(IVisitor* pVisitor) = 0; // For Pattern Visitor
++    //Getters and Setters
+     inline void SetSpeed(double sp) { speed = sp; }
+     inline void SetDirection(double dx, double dy) { xDirction = dx; yDirection = dy; }
+-    
+-    virtual void Move(uint16_t time) { x += xDirction * speed * time * 0.001; y += yDirection * speed * time * 0.001; };
+-
++    [[nodiscard]] double GetSpeed() const {return speed;}
++    [[nodiscard]] std::tuple<double, double> GetDirection() const {
++        return std::tie(xDirction, yDirection);
++    }
+ protected:
+ 
+     double speed;
+diff --git a/SBomber/include/IVisitor.h b/SBomber/include/IVisitor.h
+index 83d4b6f..dd6f8b3 100644
+--- a/SBomber/include/IVisitor.h
++++ b/SBomber/include/IVisitor.h
+@@ -1,14 +1,24 @@
+-//
+-// Created by maxim on 17.01.2022.
+-//
+-
+ #ifndef SBOMBER_IVISITOR_H
+ #define SBOMBER_IVISITOR_H
+ 
++#include <memory>
++
++class Bomb;
++class Plane;
+ 
+ class IVisitor {
++public:
++    virtual ~IVisitor() = default;
+ 
++    virtual void visit(Bomb* pBomb) const = 0;
++    virtual void visit(Plane* pPlane) const = 0;
+ };
+ 
+ 
++class LogVisitor : public IVisitor {
++public:
++    void visit(Bomb* pBomb) const override;
++    void visit(Plane* pPlane) const override;
++};
++
+ #endif //SBOMBER_IVISITOR_H
+diff --git a/SBomber/include/Plane.h b/SBomber/include/Plane.h
+index 1920bdd..9ad719c 100644
+--- a/SBomber/include/Plane.h
++++ b/SBomber/include/Plane.h
+@@ -1,6 +1,7 @@
+ #pragma once
+ 
+ #include "DynamicObject.h"
++#include "IVisitor.h"
+ 
+ class Plane : public DynamicObject {
+ public:
+@@ -9,6 +10,7 @@ public:
+ 
+     inline void ChangePlaneY(double dy) { yDirection += dy; }
+ 
++    void Accept(IVisitor* pVisitor) override;
+ private:
+ 
+ };
+diff --git a/SBomber/include/SBomber.h b/SBomber/include/SBomber.h
+index 6173437..3bb6248 100644
+--- a/SBomber/include/SBomber.h
++++ b/SBomber/include/SBomber.h
+@@ -65,6 +65,7 @@ private:
+ 
+     int m_type_house; // for Pattern Builder.
+     std::unique_ptr<CollisionDetector> m_CollisionD;
++    std::unique_ptr<IVisitor> logVisitor;
+ };
+ 
+ 
+diff --git a/SBomber/src/Bomb.cpp b/SBomber/src/Bomb.cpp
+index 8ca69f3..6280349 100644
+--- a/SBomber/src/Bomb.cpp
++++ b/SBomber/src/Bomb.cpp
+@@ -12,3 +12,7 @@ void Bomb::Draw() const {
+ Bomb::~Bomb() {
+     std::cout << "~Bomb()" << std::endl;
+ }
++
++void Bomb::Accept(IVisitor* v) {
++    v->visit(this);
++}
+diff --git a/SBomber/src/CollisionDetector.cpp b/SBomber/src/CollisionDetector.cpp
+index 254f23a..25bb8dc 100644
+--- a/SBomber/src/CollisionDetector.cpp
++++ b/SBomber/src/CollisionDetector.cpp
+@@ -22,21 +22,18 @@ void CollisionDetector::CheckPlaneAndLevelGUI() {
+ void CollisionDetector::CheckBombsAndGround() {
+     Ground *pGround = FindGround();
+     const double y = pGround->GetY();
+-    //Using Iterator pattern
+     std::vector<Bomb *> vecBombs = FindAllBombs();
+-    auto *pItr = new BombIterator(vecBombs);
+ 
+-    for (pItr->begin(); !pItr->isDone(); pItr->Next()) {
+-        if (pItr->CurrentObj()->GetY() >= y) {
+-            pGround->AddCrater(pItr->CurrentObj()->GetX());
+-            CheckDestroyableObjects(pItr->CurrentObj());
++    for (const auto& i : vecBombs) {
++        if (i->GetY() >= y) {
++            pGround->AddCrater(i->GetX());
++            CheckDestroyableObjects(i);
+             auto command = std::make_unique<DeleteDynamicObj>();
+             //Using Command pattern
+-            command->setParam(pItr->CurrentObj(), m_vecDynamicObj);
++            command->setParam(i, m_vecDynamicObj);
+             CommandExecute(command.get());
+         }
+     }
+-    delete pItr;
+ }
+ 
+ void CollisionDetector::CheckDestroyableObjects(Bomb* pBomb) {
+@@ -121,11 +118,9 @@ std::vector<DestroyableGroundObject *> CollisionDetector::FindDestroyableGroundO
+ 
+ std::vector<Bomb *> CollisionDetector::FindAllBombs() const {
+     std::vector<Bomb *> vecBombs;
+-    std::unique_ptr<IIterator> pItr;
+-    pItr = std::make_unique<OddBombIterator>(m_vecDynamicObj);
+ 
+-    for (pItr->First(); !pItr->isDone(); pItr->Next()) {
+-        Bomb *pBomb = pItr->CurrentObj();
++    for (const auto& i : vecBombs) {
++        Bomb *pBomb = i;
+         if (pBomb != nullptr) {
+             vecBombs.push_back(pBomb);
+         }
+diff --git a/SBomber/src/IVisitor.cpp b/SBomber/src/IVisitor.cpp
+index 13a812d..e37a454 100644
+--- a/SBomber/src/IVisitor.cpp
++++ b/SBomber/src/IVisitor.cpp
+@@ -1,5 +1,20 @@
+-//
+-// Created by maxim on 17.01.2022.
+-//
+-
+ #include "IVisitor.h"
++#include "TestFileLogger.h"
++#include "Bomb.h"
++#include "Plane.h"
++
++void LogVisitor::visit(Bomb* pBomb) const {
++    auto bomb_direction = pBomb->GetDirection();
++    TestFileLogger::getInstance().WriteToLog(std::string(__func__) +
++                                             " Bomb speed= " + std::to_string(pBomb->GetSpeed()) + " Bomb direction= " +
++                                             std::to_string(std::get<0>(bomb_direction)) + " " +
++                                             std::to_string(std::get<1>(bomb_direction)));
++}
++
++void LogVisitor::visit(Plane* pPlane) const {
++    auto plane_direction = pPlane->GetDirection();
++    TestFileLogger::getInstance().WriteToLog(std::string(__func__) +
++                                             " Plane speed= " + std::to_string(pPlane->GetSpeed()) + " Plane direction= " +
++                                             std::to_string(std::get<0>(plane_direction)) + " " +
++                                             std::to_string(std::get<1>(plane_direction)));
++}
+diff --git a/SBomber/src/Plane.cpp b/SBomber/src/Plane.cpp
+index 085ed87..52c1539 100644
+--- a/SBomber/src/Plane.cpp
++++ b/SBomber/src/Plane.cpp
+@@ -17,3 +17,7 @@ void Plane::Draw() const
+     ScreenSingleton::getInstance().GotoXY(x + 3, y + 1);
+     std::cout << "////";
+ }
++
++void Plane::Accept(IVisitor* v) {
++    v->visit(this);
++}
+diff --git a/SBomber/src/SBomber.cpp b/SBomber/src/SBomber.cpp
+index c0a1869..5a48796 100644
+--- a/SBomber/src/SBomber.cpp
++++ b/SBomber/src/SBomber.cpp
+@@ -145,10 +145,11 @@ SBomber::~SBomber() {
+ void SBomber::MoveObjects() {
+     FileLoggerProxy::getInstance().WriteToLog(std::string(__func__)
+                                               + " was invoked");
+-
++    logVisitor = std::make_unique<LogVisitor>();
+     for (size_t i = 0; i < vecDynamicObj.size(); i++) {
+         if (vecDynamicObj[i] != nullptr) {
+             vecDynamicObj[i]->Move(deltaTime);
++            vecDynamicObj[i]->Accept(logVisitor.get());
+         }
+     }
+ };
+diff --git a/SBomber/src/main.cpp b/SBomber/src/main.cpp
+index 0f34be8..7974f96 100644
+--- a/SBomber/src/main.cpp
++++ b/SBomber/src/main.cpp
+@@ -4,17 +4,18 @@
+ 
+ 
+ int main(int argc, char** argv) {
+-  FileLoggerProxy::getInstance().OpenLogFile("log.txt");
++//  FileLoggerProxy::getInstance().OpenLogFile("log.txt");
+   TestFileLogger::getInstance().OpenLogFile("test_log.txt");
+ 
++
+ 	std::cout << "Choose house type: \n" << "1: Standard house.\n" << "2: Minimal house.\n";
+-	int c;
+-	std::cin >> c;
++	int c = 1;
++//	std::cin >> c;
+ 
+   SBomber game(c);
+   game.run();
+ 
+-  FileLoggerProxy::getInstance().CloseLogFile();
++//  FileLoggerProxy::getInstance().CloseLogFile();
+   TestFileLogger::getInstance().CloseLogFile();
+ 
+ 

@@ -1,7 +1,6 @@
 #include "House.h"
 #include <iostream>
 #include "MyTools.h"
-#include "HouseBuilder.h"
 #include "ScreenSingleton.h"
 
 bool House::isInside(double x1, double x2) const
@@ -29,7 +28,7 @@ bool House::isInside(double x1, double x2) const
 
 void House::Draw() const
 {
-	/*ScreenSingleton::getInstance().SetColor(CC_Yellow);
+	ScreenSingleton::getInstance().SetColor(CC_Yellow);
 	ScreenSingleton::getInstance().GotoXY(x, y - 5);
 	std::cout << "  ########  ";
 	ScreenSingleton::getInstance().GotoXY(x, y - 4);
@@ -41,15 +40,5 @@ void House::Draw() const
 	ScreenSingleton::getInstance().GotoXY(x, y - 1);
 	std::cout << "#          #";
 	ScreenSingleton::getInstance().GotoXY(x, y);
-	std::cout << "############";*/
-
-	ScreenSingleton::getInstance().SetColor(CC_Yellow);
-	ScreenSingleton::getInstance().GotoXY(x, y - 5);
-    for(auto i : look) {
-        for (size_t j = 0; j < columns; ++j) {
-            std::cout << i[j] << " ";
-        }
-        std::cout << '\n';
-    }
-
+	std::cout << "############";
 }

@@ -22,21 +22,18 @@ void CollisionDetector::CheckPlaneAndLevelGUI() {
 void CollisionDetector::CheckBombsAndGround() {
     Ground *pGround = FindGround();
     const double y = pGround->GetY();
-    //Using Iterator pattern
     std::vector<Bomb *> vecBombs = FindAllBombs();
-    auto *pItr = new BombIterator(vecBombs);
 
-    for (pItr->begin(); !pItr->isDone(); pItr->Next()) {
-        if (pItr->CurrentObj()->GetY() >= y) {
-            pGround->AddCrater(pItr->CurrentObj()->GetX());
-            CheckDestroyableObjects(pItr->CurrentObj());
+    for (const auto& i : vecBombs) {
+        if (i->GetY() >= y) {
+            pGround->AddCrater(i->GetX());
+            CheckDestroyableObjects(i);
             auto command = std::make_unique<DeleteDynamicObj>();
             //Using Command pattern
-            command->setParam(pItr->CurrentObj(), m_vecDynamicObj);
+            command->setParam(i, m_vecDynamicObj);
             CommandExecute(command.get());
         }
     }
-    delete pItr;
 }
 
 void CollisionDetector::CheckDestroyableObjects(Bomb* pBomb) {
@@ -121,11 +118,9 @@ std::vector<DestroyableGroundObject *> CollisionDetector::FindDestroyableGroundO
 
 std::vector<Bomb *> CollisionDetector::FindAllBombs() const {
     std::vector<Bomb *> vecBombs;
-    std::unique_ptr<IIterator> pItr;
-    pItr = std::make_unique<OddBombIterator>(m_vecDynamicObj);
 
-    for (pItr->First(); !pItr->isDone(); pItr->Next()) {
-        Bomb *pBomb = pItr->CurrentObj();
+    for (const auto& i : vecBombs) {
+        Bomb *pBomb = i;
         if (pBomb != nullptr) {
             vecBombs.push_back(pBomb);
         }

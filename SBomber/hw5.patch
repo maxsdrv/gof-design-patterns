@@ -1,0 +1,768 @@
+diff --git a/SBomber/CMakeLists.txt b/SBomber/CMakeLists.txt
+index 20f1ead..d13862a 100644
+--- a/SBomber/CMakeLists.txt
++++ b/SBomber/CMakeLists.txt
+@@ -19,10 +19,9 @@ list(APPEND HEADER
+         include/AdapterTank.h
+         include/HouseBuilder.h
+         include/HouseBuilderA.h
+-        include/HouseModels.h
+         include/Director.h
+         include/CollisionDetector.h
+-        )
++        include/IVisitor.h)
+ 
+ 
+ 
+@@ -35,7 +34,7 @@ list(APPEND SOURCE
+         src/HouseBuilder.cpp
+         src/HouseBuilderA.cpp
+         src/CollisionDetector.cpp
+-        )
++        src/IVisitor.cpp)
+ 
+ 
+ 
+diff --git a/SBomber/include/Bomb.h b/SBomber/include/Bomb.h
+index f773d5c..cc94136 100644
+--- a/SBomber/include/Bomb.h
++++ b/SBomber/include/Bomb.h
+@@ -1,6 +1,7 @@
+ #pragma once
+ 
+ #include "DynamicObject.h"
++#include "IVisitor.h"
+ 
+ class Bomb : public DynamicObject
+ {
+@@ -10,6 +11,8 @@ public:
+ 
+ 	void Draw() const override;
+ 
++    void Accept(IVisitor* pVisitor) override;
++
+     ~Bomb() override;
+ private:
+ 
+diff --git a/SBomber/include/CollisionDetector.h b/SBomber/include/CollisionDetector.h
+index 690401d..31f0df3 100644
+--- a/SBomber/include/CollisionDetector.h
++++ b/SBomber/include/CollisionDetector.h
+@@ -13,13 +13,18 @@ public:
+     void CheckPlaneAndLevelGUI();
+     void CheckBombsAndGround();
+     void  CheckDestroyableObjects(Bomb* pBomb);
+-    static void CommandExecute(Command* command);
++
++    std::vector<DynamicObject*> updateDynamicVector() { return m_vecDynamicObj; }
++    std::vector<GameObject*> updateStaticVector() { return m_vecStaticObj; }
+ 
+     Ground * FindGround() const;
+     Plane * FindPlane() const;
+     LevelGUI * FindLevelGUI() const;
+     [[nodiscard]] std::vector<DestroyableGroundObject*> FindDestroyableGroundObjects() const;
+     std::vector<Bomb*> FindAllBombs() const;
++
++    void DeleteDynamicObj(DynamicObject* pObj);
++    void DeleteStaticObj(GameObject* pObj);
+ private:
+     int16_t m_score;
+     bool m_exitFlag;
+diff --git a/SBomber/include/DynamicObject.h b/SBomber/include/DynamicObject.h
+index b38e36d..b64ac17 100644
+--- a/SBomber/include/DynamicObject.h
++++ b/SBomber/include/DynamicObject.h
+@@ -1,8 +1,10 @@
+ #pragma once
+ 
+-#include <stdint.h>
++#include <cstdint>
++#include <tuple>
+ 
+ #include "GameObject.h"
++#include "IVisitor.h"
+ 
+ class DynamicObject : public GameObject 
+ {
+@@ -10,11 +12,15 @@ public:
+ 
+     DynamicObject() : speed(0.0), xDirction(0.0), yDirection(0) { }
+ 
++    virtual void Move(uint16_t time) { x += xDirction * speed * time * 0.001; y += yDirection * speed * time * 0.001; };
++    virtual void Accept(IVisitor* pVisitor) = 0; // For Pattern Visitor
++    //Getters and Setters
+     inline void SetSpeed(double sp) { speed = sp; }
+     inline void SetDirection(double dx, double dy) { xDirction = dx; yDirection = dy; }
+-    
+-    virtual void Move(uint16_t time) { x += xDirction * speed * time * 0.001; y += yDirection * speed * time * 0.001; };
+-
++    [[nodiscard]] double GetSpeed() const {return speed;}
++    [[nodiscard]] std::tuple<double, double> GetDirection() const {
++        return std::tie(xDirction, yDirection);
++    }
+ protected:
+ 
+     double speed;
+diff --git a/SBomber/include/IVisitor.h b/SBomber/include/IVisitor.h
+index 83d4b6f..dd6f8b3 100644
+--- a/SBomber/include/IVisitor.h
++++ b/SBomber/include/IVisitor.h
+@@ -1,14 +1,24 @@
+-//
+-// Created by maxim on 17.01.2022.
+-//
+-
+ #ifndef SBOMBER_IVISITOR_H
+ #define SBOMBER_IVISITOR_H
+ 
++#include <memory>
++
++class Bomb;
++class Plane;
+ 
+ class IVisitor {
++public:
++    virtual ~IVisitor() = default;
+ 
++    virtual void visit(Bomb* pBomb) const = 0;
++    virtual void visit(Plane* pPlane) const = 0;
+ };
+ 
+ 
++class LogVisitor : public IVisitor {
++public:
++    void visit(Bomb* pBomb) const override;
++    void visit(Plane* pPlane) const override;
++};
++
+ #endif //SBOMBER_IVISITOR_H
+diff --git a/SBomber/include/Plane.h b/SBomber/include/Plane.h
+index 1920bdd..9ad719c 100644
+--- a/SBomber/include/Plane.h
++++ b/SBomber/include/Plane.h
+@@ -1,6 +1,7 @@
+ #pragma once
+ 
+ #include "DynamicObject.h"
++#include "IVisitor.h"
+ 
+ class Plane : public DynamicObject {
+ public:
+@@ -9,6 +10,7 @@ public:
+ 
+     inline void ChangePlaneY(double dy) { yDirection += dy; }
+ 
++    void Accept(IVisitor* pVisitor) override;
+ private:
+ 
+ };
+diff --git a/SBomber/include/SBomber.h b/SBomber/include/SBomber.h
+index 6173437..f7a386b 100644
+--- a/SBomber/include/SBomber.h
++++ b/SBomber/include/SBomber.h
+@@ -15,10 +15,6 @@
+ #include "enums/CraterSize.h"
+ #include "CollisionDetector.h"
+ 
+-class Command;
+-class IContext;
+-class Context;
+-class CollisionDetector;
+ 
+ class SBomber
+ {
+@@ -47,24 +43,33 @@ public:
+                               const int16_t score);
+     static Ground* createGround();
+     static Tank* createTank(const double pos, const uint16_t width);
+-    House* createHouse(const double pos, const uint16_t width) const;
++    House* createHouse(const double pos, const uint16_t width);
+ 
+-    static void CommandExecute(Command* command);
+ private:
+-    void updateFromCommand(Context* context);
++    void CheckPlaneAndLevelGUI();
++    void CheckBombsAndGround();
++    void  CheckDestoyableObjects(Bomb* pBomb);
++
++    void  DeleteDynamicObj(DynamicObject * pBomb);
++    void  DeleteStaticObj(GameObject* pObj);
++
++    Ground * FindGround() const;
++    Plane * FindPlane() const;
++    LevelGUI * FindLevelGUI() const;
++    std::vector<DestroyableGroundObject*> FindDestoyableGroundObjects() const;
++    std::vector<Bomb*> FindAllBombs() const;
++
++    void DropBomb();
+ 
+     std::vector<DynamicObject*> vecDynamicObj;
+     std::vector<GameObject*> vecStaticObj;
+ 
+     bool exitFlag;
+-    bool oddIteration; // for Pattern Iterator, switching between Odd or Even Iteration
+ 
+     uint64_t startTime, finishTime, passedTime;
+     uint16_t bombsNumber, deltaTime, fps;
+     int16_t score;
+ 
+-    int m_type_house; // for Pattern Builder.
+-    std::unique_ptr<CollisionDetector> m_CollisionD;
+ };
+ 
+ 
+diff --git a/SBomber/src/Bomb.cpp b/SBomber/src/Bomb.cpp
+index 8ca69f3..6280349 100644
+--- a/SBomber/src/Bomb.cpp
++++ b/SBomber/src/Bomb.cpp
+@@ -12,3 +12,7 @@ void Bomb::Draw() const {
+ Bomb::~Bomb() {
+     std::cout << "~Bomb()" << std::endl;
+ }
++
++void Bomb::Accept(IVisitor* v) {
++    v->visit(this);
++}
+diff --git a/SBomber/src/CollisionDetector.cpp b/SBomber/src/CollisionDetector.cpp
+index 254f23a..17fc68d 100644
+--- a/SBomber/src/CollisionDetector.cpp
++++ b/SBomber/src/CollisionDetector.cpp
+@@ -3,7 +3,6 @@
+ 
+ #include "CollisionDetector.h"
+ #include "BombIterator.h"
+-#include "OddBombIterator.h"
+ 
+ CollisionDetector::CollisionDetector(const std::vector<GameObject*>& vecStaticObj,
+                                      const std::vector<DynamicObject*>& vecDynamicObj, int16_t score,
+@@ -22,21 +21,15 @@ void CollisionDetector::CheckPlaneAndLevelGUI() {
+ void CollisionDetector::CheckBombsAndGround() {
+     Ground *pGround = FindGround();
+     const double y = pGround->GetY();
+-    //Using Iterator pattern
+     std::vector<Bomb *> vecBombs = FindAllBombs();
+-    auto *pItr = new BombIterator(vecBombs);
+-
+-    for (pItr->begin(); !pItr->isDone(); pItr->Next()) {
+-        if (pItr->CurrentObj()->GetY() >= y) {
+-            pGround->AddCrater(pItr->CurrentObj()->GetX());
+-            CheckDestroyableObjects(pItr->CurrentObj());
+-            auto command = std::make_unique<DeleteDynamicObj>();
+-            //Using Command pattern
+-            command->setParam(pItr->CurrentObj(), m_vecDynamicObj);
+-            CommandExecute(command.get());
++
++    for (const auto& i : vecBombs) {
++        if (i->GetY() >= y) {
++            pGround->AddCrater(i->GetX());
++            CheckDestroyableObjects(i);
++            DeleteDynamicObj(i);
+         }
+     }
+-    delete pItr;
+ }
+ 
+ void CollisionDetector::CheckDestroyableObjects(Bomb* pBomb) {
+@@ -44,23 +37,16 @@ void CollisionDetector::CheckDestroyableObjects(Bomb* pBomb) {
+             FindDestroyableGroundObjects();
+     const double size = pBomb->GetWidth();
+     const double size_2 = size / 2;
+-    for (size_t i = 0; i < vecDestroyableObjects.size(); i++) {
++    for (auto & i  : vecDestroyableObjects) {
+         const double x1 = pBomb->GetX() - size_2;
+         const double x2 = x1 + size;
+-        if (vecDestroyableObjects[i]->isInside(x1, x2)) {
+-            m_score += vecDestroyableObjects[i]->GetScore();
+-            //Using Command pattern
+-            auto command = std::make_unique<DeleteStaticObj>();
+-            command->setParam(vecDestroyableObjects[i], m_vecStaticObj);
+-            CommandExecute(command.get());
++        if (i->isInside(x1, x2)) {
++            m_score += i->GetScore();
++            DeleteStaticObj(i);
+         }
+     }
+ }
+ 
+-void CollisionDetector::CommandExecute(Command *command) {
+-    command->execute();
+-}
+-
+ 
+ 
+ Ground *CollisionDetector::FindGround() const {
+@@ -121,11 +107,9 @@ std::vector<DestroyableGroundObject *> CollisionDetector::FindDestroyableGroundO
+ 
+ std::vector<Bomb *> CollisionDetector::FindAllBombs() const {
+     std::vector<Bomb *> vecBombs;
+-    std::unique_ptr<IIterator> pItr;
+-    pItr = std::make_unique<OddBombIterator>(m_vecDynamicObj);
+ 
+-    for (pItr->First(); !pItr->isDone(); pItr->Next()) {
+-        Bomb *pBomb = pItr->CurrentObj();
++    for (const auto& i : vecBombs) {
++        Bomb *pBomb = i;
+         if (pBomb != nullptr) {
+             vecBombs.push_back(pBomb);
+         }
+@@ -134,3 +118,22 @@ std::vector<Bomb *> CollisionDetector::FindAllBombs() const {
+     return vecBombs;
+ }
+ 
++void CollisionDetector::DeleteDynamicObj(DynamicObject* pObj) {
++    auto it = m_vecDynamicObj.begin();
++    for (; it != m_vecDynamicObj.end(); it++) {
++        if (*it == pObj) {
++            m_vecDynamicObj.erase(it);
++            break;
++        }
++    }
++}
++
++void CollisionDetector::DeleteStaticObj(GameObject* pObj) {
++    auto it = m_vecStaticObj.begin();
++    for (; it != m_vecStaticObj.end(); it++) {
++        if (*it == pObj) {
++            m_vecStaticObj.erase(it);
++            break;
++        }
++    }
++}
+\ No newline at end of file
+diff --git a/SBomber/src/House.cpp b/SBomber/src/House.cpp
+index 75d47e4..d2d3111 100644
+--- a/SBomber/src/House.cpp
++++ b/SBomber/src/House.cpp
+@@ -29,7 +29,7 @@ bool House::isInside(double x1, double x2) const
+ 
+ void House::Draw() const
+ {
+-	/*ScreenSingleton::getInstance().SetColor(CC_Yellow);
++	ScreenSingleton::getInstance().SetColor(CC_Yellow);
+ 	ScreenSingleton::getInstance().GotoXY(x, y - 5);
+ 	std::cout << "  ########  ";
+ 	ScreenSingleton::getInstance().GotoXY(x, y - 4);
+@@ -41,15 +41,15 @@ void House::Draw() const
+ 	ScreenSingleton::getInstance().GotoXY(x, y - 1);
+ 	std::cout << "#          #";
+ 	ScreenSingleton::getInstance().GotoXY(x, y);
+-	std::cout << "############";*/
++	std::cout << "############";
+ 
+-	ScreenSingleton::getInstance().SetColor(CC_Yellow);
++	/*ScreenSingleton::getInstance().SetColor(CC_Yellow);
+ 	ScreenSingleton::getInstance().GotoXY(x, y - 5);
+     for(auto i : look) {
+         for (size_t j = 0; j < columns; ++j) {
+             std::cout << i[j] << " ";
+         }
+         std::cout << '\n';
+-    }
++    }*/
+ 
+ }
+diff --git a/SBomber/src/IVisitor.cpp b/SBomber/src/IVisitor.cpp
+index 13a812d..e37a454 100644
+--- a/SBomber/src/IVisitor.cpp
++++ b/SBomber/src/IVisitor.cpp
+@@ -1,5 +1,20 @@
+-//
+-// Created by maxim on 17.01.2022.
+-//
+-
+ #include "IVisitor.h"
++#include "TestFileLogger.h"
++#include "Bomb.h"
++#include "Plane.h"
++
++void LogVisitor::visit(Bomb* pBomb) const {
++    auto bomb_direction = pBomb->GetDirection();
++    TestFileLogger::getInstance().WriteToLog(std::string(__func__) +
++                                             " Bomb speed= " + std::to_string(pBomb->GetSpeed()) + " Bomb direction= " +
++                                             std::to_string(std::get<0>(bomb_direction)) + " " +
++                                             std::to_string(std::get<1>(bomb_direction)));
++}
++
++void LogVisitor::visit(Plane* pPlane) const {
++    auto plane_direction = pPlane->GetDirection();
++    TestFileLogger::getInstance().WriteToLog(std::string(__func__) +
++                                             " Plane speed= " + std::to_string(pPlane->GetSpeed()) + " Plane direction= " +
++                                             std::to_string(std::get<0>(plane_direction)) + " " +
++                                             std::to_string(std::get<1>(plane_direction)));
++}
+diff --git a/SBomber/src/Plane.cpp b/SBomber/src/Plane.cpp
+index 085ed87..52c1539 100644
+--- a/SBomber/src/Plane.cpp
++++ b/SBomber/src/Plane.cpp
+@@ -17,3 +17,7 @@ void Plane::Draw() const
+     ScreenSingleton::getInstance().GotoXY(x + 3, y + 1);
+     std::cout << "////";
+ }
++
++void Plane::Accept(IVisitor* v) {
++    v->visit(this);
++}
+diff --git a/SBomber/src/SBomber.cpp b/SBomber/src/SBomber.cpp
+index c0a1869..e85b9ca 100644
+--- a/SBomber/src/SBomber.cpp
++++ b/SBomber/src/SBomber.cpp
+@@ -86,12 +86,17 @@ Tank *SBomber::createTank(const double pos, const uint16_t width) {
+     return pTank;
+ }
+ 
+-House *SBomber::createHouse(const double pos, const uint16_t width) const {
++House *SBomber::createHouse(const double pos, const uint16_t width) {
+     const uint16_t maxY = ScreenSingleton::getInstance().GetMaxY();
+     const uint16_t groundY = maxY - 5;
+ 
++    auto pHouse = new House;
++    pHouse->SetWidth(width);
++    pHouse->SetPos(80, groundY - 1);
++    vecStaticObj.push_back(pHouse);
++
+     //Builder Pattern
+-    House* pHouse = nullptr;
++    /*House* pHouse = nullptr;
+     if (m_type_house == 1) {
+         Director dir{};
+         HouseBuilder* standardHouse = new HouseBuilderA;
+@@ -105,7 +110,7 @@ House *SBomber::createHouse(const double pos, const uint16_t width) const {
+         pHouse = dir.createMinimalHouse(minimalHouse);
+         pHouse->SetWidth(width);
+         pHouse->SetPos(pos, groundY - 1);
+-    }
++    }*/
+ 
+ 
+     return pHouse;
+@@ -113,7 +118,7 @@ House *SBomber::createHouse(const double pos, const uint16_t width) const {
+ 
+ SBomber::SBomber(int type_house)
+         : exitFlag(false), startTime(0), finishTime(0), deltaTime(0), passedTime(0),
+-          fps(0), bombsNumber(10), score(0), oddIteration(false), m_type_house(type_house) {
++          fps(0), bombsNumber(10), score(0) {
+     FileLoggerProxy::getInstance().WriteToLog(std::string(__func__)
+                                               + " was invoked");
+ 
+@@ -124,27 +129,25 @@ SBomber::SBomber(int type_house)
+     vecStaticObj.push_back(createTank(50, 13));
+     vecStaticObj.push_back(createHouse(80, 13));
+ 
+-    m_CollisionD = std::make_unique<CollisionDetector>(vecStaticObj, vecDynamicObj, score, exitFlag);
+ }
+ 
+ SBomber::~SBomber() {
+-    for (size_t i = 0; i < vecDynamicObj.size(); i++) {
+-        if (vecDynamicObj[i] != nullptr) {
+-            delete vecDynamicObj[i];
++    for (auto & i : vecDynamicObj) {
++        if (i != nullptr) {
++            delete i;
+         }
+     }
+ 
+-    for (size_t i = 0; i < vecStaticObj.size(); i++) {
+-        if (vecStaticObj[i] != nullptr) {
+-            delete vecStaticObj[i];
++    for (auto & i : vecStaticObj) {
++        if (i != nullptr) {
++            delete i;
+         }
+     }
+     std::cout << "~SBomber()" << std::endl;
+ }
+ 
+ void SBomber::MoveObjects() {
+-    FileLoggerProxy::getInstance().WriteToLog(std::string(__func__)
+-                                              + " was invoked");
++    FileLoggerProxy::getInstance().WriteToLog(std::string(__func__) + " was invoked");
+ 
+     for (size_t i = 0; i < vecDynamicObj.size(); i++) {
+         if (vecDynamicObj[i] != nullptr) {
+@@ -154,12 +157,134 @@ void SBomber::MoveObjects() {
+ };
+ 
+ void SBomber::CheckObjects() {
+-    FileLoggerProxy::getInstance().WriteToLog(std::string(__func__)
+-                                              + " was invoked");
+-    m_CollisionD->CheckPlaneAndLevelGUI();
+-    m_CollisionD->CheckBombsAndGround();
++    FileLoggerProxy::getInstance().WriteToLog(std::string(__func__) + " was invoked");
++
++    CheckPlaneAndLevelGUI();
++    CheckBombsAndGround();
+ };
+ 
++void SBomber::CheckPlaneAndLevelGUI() {
++    if (FindPlane()->GetX() > FindLevelGUI()->GetFinishX()) {
++        exitFlag = true;
++    }
++}
++
++void SBomber::CheckBombsAndGround() {
++    std::vector<Bomb*> vecBombs = FindAllBombs();
++    Ground* pGround = FindGround();
++    const double y = pGround->GetY();
++    for (size_t i = 0; i < vecBombs.size(); i++) {
++        if (vecBombs[i]->GetY() >= y) {
++            pGround->AddCrater(vecBombs[i]->GetX());
++            CheckDestoyableObjects(vecBombs[i]);
++            DeleteDynamicObj(vecBombs[i]);
++        }
++    }
++}
++
++void SBomber::CheckDestoyableObjects(Bomb* pBomb) {
++    std::vector<DestroyableGroundObject*> vecDestoyableObjects =
++            FindDestoyableGroundObjects();
++    const double size = pBomb->GetWidth();
++    const double size_2 = size / 2;
++    for (size_t i = 0; i < vecDestoyableObjects.size(); i++) {
++        const double x1 = pBomb->GetX() - size_2;
++        const double x2 = x1 + size;
++        if (vecDestoyableObjects[i]->isInside(x1, x2)) {
++            score += vecDestoyableObjects[i]->GetScore();
++            DeleteStaticObj(vecDestoyableObjects[i]);
++        }
++    }
++}
++
++void SBomber::DeleteDynamicObj(DynamicObject* pObj) {
++    auto it = vecDynamicObj.begin();
++    for (; it != vecDynamicObj.end(); it++) {
++        if (*it == pObj) {
++            vecDynamicObj.erase(it);
++            break;
++        }
++    }
++}
++
++void SBomber::DeleteStaticObj(GameObject* pObj) {
++    auto it = vecStaticObj.begin();
++    for (; it != vecStaticObj.end(); it++) {
++        if (*it == pObj) {
++            vecStaticObj.erase(it);
++            break;
++        }
++    }
++}
++
++std::vector<DestroyableGroundObject*> SBomber::FindDestoyableGroundObjects() const {
++    std::vector<DestroyableGroundObject*> vec;
++    Tank* pTank;
++    House* pHouse;
++    for (size_t i = 0; i < vecStaticObj.size(); i++) {
++        pTank = dynamic_cast<Tank*>(vecStaticObj[i]);
++        if (pTank != nullptr) {
++            vec.push_back(pTank);
++            continue;
++        }
++
++        pHouse = dynamic_cast<House*>(vecStaticObj[i]);
++        if (pHouse != nullptr) {
++            vec.push_back(pHouse);
++            continue;
++        }
++    }
++
++    return vec;
++}
++
++Ground* SBomber::FindGround() const {
++    Ground* pGround;
++
++    for (size_t i = 0; i < vecStaticObj.size(); i++) {
++        pGround = dynamic_cast<Ground*>(vecStaticObj[i]);
++        if (pGround != nullptr) {
++            return pGround;
++        }
++    }
++
++    return nullptr;
++}
++
++std::vector<Bomb*> SBomber::FindAllBombs() const {
++    std::vector<Bomb*> vecBombs;
++
++    for (size_t i = 0; i < vecDynamicObj.size(); i++) {
++        Bomb* pBomb = dynamic_cast<Bomb*>(vecDynamicObj[i]);
++        if (pBomb != nullptr) {
++            vecBombs.push_back(pBomb);
++        }
++    }
++
++    return vecBombs;
++}
++
++Plane* SBomber::FindPlane() const {
++    for (size_t i = 0; i < vecDynamicObj.size(); i++) {
++        Plane* p = dynamic_cast<Plane*>(vecDynamicObj[i]);
++        if (p != nullptr) {
++            return p;
++        }
++    }
++
++    return nullptr;
++}
++
++LevelGUI* SBomber::FindLevelGUI() const {
++    for (size_t i = 0; i < vecStaticObj.size(); i++) {
++        LevelGUI* p = dynamic_cast<LevelGUI*>(vecStaticObj[i]);
++        if (p != nullptr) {
++            return p;
++        }
++    }
++
++    return nullptr;
++}
+ 
+ void SBomber::ProcessKBHit() {
+     int c = getchar();
+@@ -168,17 +293,7 @@ void SBomber::ProcessKBHit() {
+         c = getchar();
+     }
+ 
+-    FileLoggerProxy::getInstance().WriteToLog(std::string(__func__)
+-                                              + " was invoked. key = ", c);
+-
+-    //Creating Command
+-    auto context = std::make_unique<Context>();
+-    auto command = std::make_unique<CommandDropBomb>();
+-
+-    Plane *plane = m_CollisionD->FindPlane();
+-    context->setParam(plane, vecDynamicObj, bombsNumber, 2,
+-                      SMALL_CRATER_SIZE, score);
+-    command->setParam(context.get());
++    FileLoggerProxy::getInstance().WriteToLog(std::string(__func__) + " was invoked. key = ", c);
+ 
+     switch (c) {
+ 
+@@ -187,21 +302,19 @@ void SBomber::ProcessKBHit() {
+             break;
+ 
+         case 72: // up
+-            m_CollisionD->FindPlane()->ChangePlaneY(-0.25);
++            FindPlane()->ChangePlaneY(-0.25);
+             break;
+ 
+         case 80: // down
+-            m_CollisionD->FindPlane()->ChangePlaneY(0.25);
++            FindPlane()->ChangePlaneY(0.25);
+             break;
+ 
+         case 'b':
+-            CommandExecute(command.get());
+-            updateFromCommand(context.get());
++            DropBomb();
+             break;
+ 
+         case 'B':
+-            CommandExecute(command.get());
+-            updateFromCommand(context.get());
++            DropBomb();
+             break;
+ 
+         default:
+@@ -210,8 +323,8 @@ void SBomber::ProcessKBHit() {
+ }
+ 
+ void SBomber::DrawFrame() {
+-    FileLoggerProxy::getInstance().WriteToLog(std::string(__func__)
+-                                              + " was invoked");
++    FileLoggerProxy::getInstance().WriteToLog(std::string(__func__) + " was invoked");
++
+     for (size_t i = 0; i < vecDynamicObj.size(); i++) {
+         if (vecDynamicObj[i] != nullptr) {
+             vecDynamicObj[i]->Draw();
+@@ -227,12 +340,11 @@ void SBomber::DrawFrame() {
+     ScreenSingleton::getInstance().GotoXY(0, 0);
+     fps++;
+ 
+-    m_CollisionD->FindLevelGUI()->SetParam(passedTime, fps, bombsNumber, score);
++    FindLevelGUI()->SetParam(passedTime, fps, bombsNumber, score);
+ }
+ 
+ void SBomber::TimeStart() {
+-    FileLoggerProxy::getInstance().WriteToLog(std::string(__func__)
+-                                              + " was invoked");
++    FileLoggerProxy::getInstance().WriteToLog(std::string(__func__) + " was invoked");
+     startTime = std::chrono::duration_cast<std::chrono::milliseconds>(
+             std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+ }
+@@ -243,10 +355,28 @@ void SBomber::TimeFinish() {
+     deltaTime = uint16_t(finishTime - startTime);
+     passedTime += deltaTime;
+ 
+-    FileLoggerProxy::getInstance().WriteToLog(std::string(__func__)
+-                                              + " deltaTime = ", (int) deltaTime);
++    FileLoggerProxy::getInstance().WriteToLog(std::string(__func__) + " deltaTime = ", (int)deltaTime);
+ }
+ 
++void SBomber::DropBomb() {
++    if (bombsNumber > 0) {
++        FileLoggerProxy::getInstance().WriteToLog(std::string(__func__) + " was invoked");
++
++        Plane* pPlane = FindPlane();
++        double x = pPlane->GetX() + 4;
++        double y = pPlane->GetY() + 2;
++
++        Bomb* pBomb = new Bomb;
++        pBomb->SetDirection(0.3, 1);
++        pBomb->SetSpeed(2);
++        pBomb->SetPos(x, y);
++        pBomb->SetWidth(SMALL_CRATER_SIZE);
++
++        vecDynamicObj.push_back(pBomb);
++        bombsNumber--;
++        score -= Bomb::BombCost;
++    }
++}
+ 
+ void SBomber::run() {
+     do {
+@@ -273,16 +403,4 @@ void SBomber::run() {
+     std::cout << GetCurDateTimeSingleton::getInstance().Calculating();
+     std::cout << "\n";
+ 
+-}
+-
+-void SBomber::CommandExecute(Command *command) {
+-    command->execute();
+-}
+-
+-void SBomber::updateFromCommand(Context *context) {
+-    bombsNumber = context->mBombCount;
+-    vecDynamicObj = context->mVecDynamicObject;
+-    score = context->mScore;
+-}
+-
+-
++}
+\ No newline at end of file
+diff --git a/SBomber/src/main.cpp b/SBomber/src/main.cpp
+index 0f34be8..7974f96 100644
+--- a/SBomber/src/main.cpp
++++ b/SBomber/src/main.cpp
+@@ -4,17 +4,18 @@
+ 
+ 
+ int main(int argc, char** argv) {
+-  FileLoggerProxy::getInstance().OpenLogFile("log.txt");
++//  FileLoggerProxy::getInstance().OpenLogFile("log.txt");
+   TestFileLogger::getInstance().OpenLogFile("test_log.txt");
+ 
++
+ 	std::cout << "Choose house type: \n" << "1: Standard house.\n" << "2: Minimal house.\n";
+-	int c;
+-	std::cin >> c;
++	int c = 1;
++//	std::cin >> c;
+ 
+   SBomber game(c);
+   game.run();
+ 
+-  FileLoggerProxy::getInstance().CloseLogFile();
++//  FileLoggerProxy::getInstance().CloseLogFile();
+   TestFileLogger::getInstance().CloseLogFile();
+ 
+ 

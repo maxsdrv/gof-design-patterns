@@ -10,31 +10,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(SOURCE)
 set(HEADER)
 
-list(APPEND HEADER
-        include/BombDecorator.h
-        include/BombIterator.h
-        include/IIterator.h
-        include/EvenBombIterator.h
-        include/OddBombIterator.h
-        include/AdapterTank.h
-        include/HouseBuilder.h
-        include/HouseBuilderA.h
-        include/HouseModels.h
-        include/Director.h
-        include/CollisionDetector.h
-        )
+list(APPEND HEADER)
+
 
 
 
 list(APPEND SOURCE
-        src/BombDecorator.cpp
-        src/BombIterator.cpp
-        src/EvenBombIterator.cpp
-        src/OddBombIterator.cpp
-        src/AdapterTank.cpp
-        src/HouseBuilder.cpp
-        src/HouseBuilderA.cpp
-        src/CollisionDetector.cpp
         )
 
 
